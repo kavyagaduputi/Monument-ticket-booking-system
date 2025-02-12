@@ -1,0 +1,76 @@
+import sqlite3
+import tkinter as tk
+from tkinter import messagebox
+
+# Database Setup
+conn = sqlite3.connect("tickets.db")
+cursor = conn.cursor()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    monument TEXT
+)
+""")
+conn.commit()
+
+# Functions
+def book_ticket():
+    name = name_entry.get()
+    age = age_entry.get()
+    monument = monument_entry.get()
+    
+    if name and age and monument:
+        cursor.execute("INSERT INTO tickets (name, age, monument) VALUES (?, ?, ?)", (name, age, monument))
+        conn.commit()
+        messagebox.showinfo("Success", "Ticket Booked Successfully!")
+    else:
+        messagebox.showerror("Error", "All fields are required!")
+
+def view_tickets():
+    cursor.execute("SELECT * FROM tickets")
+    records = cursor.fetchall()
+    ticket_list.delete(0, tk.END)
+    for record in records:
+        ticket_list.insert(tk.END, f"ID: {record[0]} | Name: {record[1]} | Age: {record[2]} | Monument: {record[3]}")
+
+def cancel_ticket():
+    selected = ticket_list.curselection()
+    if selected:
+        ticket_id = ticket_list.get(selected[0]).split(" ")[1]
+        cursor.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+        conn.commit()
+        messagebox.showinfo("Success", "Ticket Cancelled Successfully!")
+        view_tickets()
+    else:
+        messagebox.showerror("Error", "Please select a ticket to cancel!")
+
+# GUI Setup
+root = tk.Tk()
+root.title("Monument Ticket Booking")
+root.geometry("400x500")
+
+tk.Label(root, text="Name").pack()
+name_entry = tk.Entry(root)
+name_entry.pack()
+
+tk.Label(root, text="Age").pack()
+age_entry = tk.Entry(root)
+age_entry.pack()
+
+tk.Label(root, text="Monument").pack()
+monument_entry = tk.Entry(root)
+monument_entry.pack()
+
+tk.Button(root, text="Book Ticket", command=book_ticket).pack(pady=5)
+tk.Button(root, text="View Tickets", command=view_tickets).pack(pady=5)
+tk.Button(root, text="Cancel Ticket", command=cancel_ticket).pack(pady=5)
+
+ticket_list = tk.Listbox(root, width=50)
+ticket_list.pack(pady=10)
+
+root.mainloop()
+
+# Close the database connection on exit
+conn.close()
